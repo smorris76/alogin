@@ -1,4 +1,4 @@
-#!/home/shawn/venv/eapi-test/bin/python3
+#!/usr/bin/env python3
 import argparse
 import jsonrpclib
 import sys
@@ -27,9 +27,11 @@ def main():
     parser.add_argument('-u', "--username", help="Name of the user to connect as (default is admin)",
                         default="admin")
     args = parser.parse_args()
+    
     # Either -c or -f must be selected 
     if not (args.command or args.filename):
         parser.error("At least one of -c or -f must be specified.")
+    
     apiEndpoints = getEndpoints(args.switches, args.https,
                                args.username, args.password)
     cmdList = []
@@ -47,8 +49,8 @@ def main():
         output="text"
     else:
         output="json"
-    if cmdList:
-            runCmds(apiEndpoints, cmdList, output, args.autocomplete, args.expandalias)
+    
+    runCmds(apiEndpoints, cmdList, output, args.autocomplete, args.expandalias)
     
 def getEndpoints(switchHostnames, protocol, username, password):
     """ Check that each server is up, and return a mapping from
