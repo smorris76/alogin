@@ -3,6 +3,7 @@ import argparse
 import jsonrpclib
 import sys
 import pprint
+import ssl
 
 def main():
     parser = argparse.ArgumentParser(description="Run commands on one or more Arista switches")
@@ -24,10 +25,15 @@ def main():
                         help="Execute 'enable' before running commands")
     parser.add_argument("-s","--https", help="Use HTTPS instead of HTTP",
                         action="store_const", const="https", default="http")
+    parser.add_argument('-S', '--ignoressl', default=False, action="store_true",
+                        help="Skip SSL certificate validation")
     parser.add_argument('-u', "--username", help="Name of the user to connect as (default is admin)",
                         default="admin")
     args = parser.parse_args()
     
+    if args.ignoressl:
+        ssl._create_default_https_context = ssl._create_unverified_context
+
     # Either -c or -f must be selected 
     if not (args.command or args.filename):
         parser.error("At least one of -c or -f must be specified.")
@@ -57,16 +63,16 @@ def getEndpoints(switchHostnames, protocol, username, password):
     hostname to jsonrpclib.Server """
     apiEndpoints = {} # mapping from hostname to the API endpoint
     for switch in switchHostnames:
-       url = "{protocol}://{user}:{pw}@{hostname}/command-api".format(
-          protocol=protocol, user=username, pw=password, hostname=switch)
-       server = jsonrpclib.Server(url)
-       try:
-          # We should at least be able to 'enable'
-          server.runCmds(1, ["show hostname"])
-       except Exception as e:
-          print("Unable to run 'show hostname' on " + switch)
-          sys.exit(1)
-       apiEndpoints[switch] = server
+        url = "{protocol}://{user}:{pw}@{hostname}/command-api".format(
+            protocol=protocol, user=username, pw=password, hostname=switch)
+        server = jsonrpclib.Server(url)
+        try:
+            # We should at least be able to 'enable'
+            server.runCmds(1, ["show hostname"])
+        except Exception as e:
+            print("Unable to run 'show hostname' on " + switch)
+            sys.exit(1)
+        apiEndpoints[switch] = server
     return apiEndpoints
  
 def runCmds(endpoints, cmdList, output, acomplete, aliases):
